@@ -29,14 +29,14 @@ function evalWrapper(s: string) {
 
 // updates=true will show the "check updates" version of the page
 export default function InstalledPlugins({ updates }: { updates?: true }) {
-    const { list, error, setList, initializing } = useApiList(updates ? 'get_plugin_updates' : 'get_plugins', {}, {
+    const { list, error, setList, initializing } = useApiList<any>(updates ? 'get_plugin_updates' : 'get_plugins', {}, {
         map(x: any) { x.config &&= tryJson(x.config, s => evalWrapper('()=>('+s+')')()) }
     })
     const [sortAgain, setSortAgain] = useState(0)
     useEffect(() => {
         setList(list =>
             _.sortBy(list, x => (x.error ? 0 : x.started ? 1 : 2) + treatPluginName(x.repo?.split('/').reverse().join('/') || x.id).toLowerCase()))
-    }, [list.length, sortAgain]);
+    }, [list.length, sortAgain])
     const size = 'small'
     const { pause, pauseButton } = usePauseButton("plugins", () => getSingleConfig(CFG.suspend_plugins).then(x => !x), {
         async onClick() {
@@ -63,7 +63,7 @@ export default function InstalledPlugins({ updates }: { updates?: true }) {
                 flex: .3,
                 minWidth: 150,
                 renderCell: renderName,
-                valueGetter({ row }) { return row.repo || row.id },
+                valueGetter(_value: any, row: any) { return row.repo || row.id },
                 mergeRender: { [updates ? 'changelog' : 'description']: { fontSize: 'x-small' } }
             },
             {

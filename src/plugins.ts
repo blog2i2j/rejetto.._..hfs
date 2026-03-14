@@ -123,14 +123,36 @@ export function getPluginConfigFields(id: string) {
     return plugins.get(id)?.getData().config
 }
 
-async function initPlugin(pl: any, morePassedToInit?: { id: string } & Dict<any>) {
+async function initPlugin(pl: any, morePassedToInit?: { id: string } & Dict) {
     const undoEvents: any[] = []
     const timeouts: NodeJS.Timeout[] = []
     const controlledEvents = Object.create(events, objFromKeys(['on', 'once', 'multi'], k => ({
         value() {
+            if (k === 'multi')
+                arguments[0] = objSameKeys(arguments[0], trap)
+            else
+                arguments[1] = trap(arguments[1])
             const ret = (events[k] as any)(...arguments)
             undoEvents.push(ret)
             return ret
+
+            function trap(cb: unknown) {
+                return (...args: any[]) => {
+                    try {
+                        if (!_.isFunction(cb)) return
+                        const ret = cb(...args)
+                        return ret instanceof Promise ? ret.catch(printError) : ret
+                    }
+                    catch(e) {
+                        printError(e)
+                    }
+
+                    function printError(e: any) {
+                        console.error(morePassedToInit?.id || '', e)
+                    }
+                }
+            }
+
         }
     })))
     const res = await pl.init?.({

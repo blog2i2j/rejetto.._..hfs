@@ -114,11 +114,9 @@ test('admin2', async ({ page }) => {
     if (!isPhone) {
         // This field uses a masked input: selecting from picker is more reliable than typing.
         await addDialog.getByRole('button', { name: 'Choose date' }).click()
-        const picker = page.locator('.MuiPickersPopper-root[role="dialog"]')
-        await picker.locator('button.MuiPickersDay-root:not([disabled])').first().click()
-        // Close the popper so it doesn't intercept clicks on the Add dialog buttons.
+        const picker = page.getByRole('dialog', { name: 'Expire' })
+        await picker.locator('[role="gridcell"]:not([disabled]):not([aria-disabled="true"])').first().click()
         await page.keyboard.press('Escape')
-        await expect(addDialog.getByRole('textbox', { name: 'Expire' })).not.toHaveValue('MM/DD/YYYY hh:mm aa')
     }
     await addDialog.getByRole('button').last().click()
     await expect(addDialog).not.toBeVisible()

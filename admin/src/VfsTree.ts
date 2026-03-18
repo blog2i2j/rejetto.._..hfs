@@ -33,8 +33,7 @@ export default function VfsTree({ statusApi }:{ statusApi: ApiObject }) {
         if (isRoot && ref.current)
             ref.current.firstElementChild?.classList.toggle('Mui-selected', !(selectedFiles.length && !_.find(selectedFiles, { id: '/' })))
         return h(TreeItem, {
-            ref(el) { // workaround to permit drag&drop with mui5's tree
-                el?.addEventListener('focusin', (e: any) => e.stopImmediatePropagation())
+            ref(el) {
                 ref.current = el
             },
             onDoubleClick: toggle,
@@ -131,6 +130,11 @@ export default function VfsTree({ statusApi }:{ statusApi: ApiObject }) {
         vfs && h(SimpleTreeView, {
             ref,
             expandedItems: toMutable(expanded),
+            expansionTrigger: 'iconContainer',
+            onExpandedItemsChange(_ev, ids) {
+                // keep placeholder helper rows out of expansion state to avoid persisting fake ids
+                state.expanded = wantArray(ids).filter((x): x is string => typeof x === 'string' && !x.startsWith(SPECIAL_TREE_ITEM))
+            },
             selectedItems: selectedFiles.map(x => x.id),
             multiSelect: true,
             id: treeId,

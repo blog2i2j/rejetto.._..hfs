@@ -12,7 +12,10 @@ import { httpStream, parseHttpUrl, stream2string, XRequestOptions } from '../src
 import { ThrottledStream, ThrottleGroup } from '../src/ThrottledStream'
 import { mkdir, rm, rename, writeFile, access } from 'fs/promises'
 import { Readable } from 'stream'
+import { buffer as stream2buffer } from 'node:stream/consumers'
 import { XMLValidator } from 'fast-xml-parser'
+import { unzip } from '../src/util-files'
+import { QuickZipStream } from '../src/QuickZipStream'
 /*
 import { PORT, srv } from '../src'
 
@@ -225,6 +228,22 @@ describe('basics', () => {
     }))
     test('zip.alfa is forbidden', req('/protectFromAbove/child/?get=zip&list=alfa.txt//renamed', { empty: true, length:134 }, { method:'HEAD' }))
     test('zip.cantReadPage', req('/cantReadPage/?get=zip', { length: 4832 }, { method:'HEAD' }))
+    test('unzip.high version still extracts', async () => {
+        const zipData = await makeZipWithVersionNeeded(788)
+        const folder = resolve(__dirname, 'tmp', 'zip-high-version')
+        await rmAny(folder)
+        try {
+            const out = join(folder, 'a.txt')
+            await unzip(Readable.from(zipData), path => path === 'a.txt' && out)
+            if (readFileSync(out, 'utf8') !== 'hello')
+                throw "unexpected content"
+            if (!process.platform.startsWith('win') && !(statSync(out).mode & 0o111))
+                throw "executable bit missing"
+        }
+        finally {
+            await rmAny(folder)
+        }
+    })
 
     test('referer', req('/f1/page/gpl.png', 403, {
         headers: { Referer: 'https://some-website.com/try-to-trick/x.com/' }
@@ -1297,6 +1316,28 @@ class StringRepeaterStream extends Readable {
 function makeReadableThatTakes(ms: number) {
     return Object.assign(Readable.from(BIG_CONTENT).pipe(new ThrottledStream(new ThrottleGroup(BIG_CONTENT.length / ms))),
         { length: BIG_CONTENT.length })
+}
+
+async function makeZipWithVersionNeeded(versionNeededToExtract: number) {
+    const zip = new QuickZipStream((async function* () {
+        yield {
+            path: 'a.txt',
+            size: 5,
+            ts: new Date('2024-01-01T00:00:00Z'),
+            mode: 0o100755,
+            getData: () => Readable.from('hello'),
+        }
+    })())
+    const data = await stream2buffer(zip)
+    // patch both headers so the test reproduces the exact compatibility issue without depending on an external zip tool
+    for (let i = 0; i <= data.length - 4; i++) {
+        const signature = data.readUInt32LE(i)
+        if (signature === 0x04034b50)
+            data.writeUInt16LE(versionNeededToExtract, i + 4)
+        else if (signature === 0x02014b50)
+            data.writeUInt16LE(versionNeededToExtract, i + 6)
+    }
+    return data
 }
 
 async function curlWithStatus(cmd: string) {

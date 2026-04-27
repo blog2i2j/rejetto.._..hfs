@@ -115,6 +115,23 @@ test('around1', async ({ page }) => {
     await expect(page.getByText('xFolder')).toBeVisible()
     await page.getByRole('button', { name: 'Close' }).click()
     await page.getByRole('link', { name: 'home' }).click()
+
+    await page.getByRole('button', { name: 'Options' }).click()
+    await page.getByRole('slider').fill('6')
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(page.locator('.list-wrapper')).toHaveClass(/tiles-mode/)
+
+    const item = page.locator('.list-wrapper li').filter({ has: page.locator('.link-wrapper > a') }).first()
+    const link = item.locator('.link-wrapper > a')
+    const name = item.locator('.entry-name')
+    await expect(link).toBeVisible()
+    await expect(name).toBeVisible()
+
+    // safari can shrink the inline link box, so compare the geometry directly against the name
+    const [linkBox, nameBox] = await Promise.all([link.boundingBox(), name.boundingBox()])
+    expect(linkBox).not.toBeNull()
+    expect(nameBox).not.toBeNull()
+    expect(linkBox!.y + linkBox!.height).toBeGreaterThanOrEqual(nameBox!.y + nameBox!.height - 1)
 })
 
 test('search1', async ({ page }) => {

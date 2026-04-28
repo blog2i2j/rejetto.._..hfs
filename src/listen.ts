@@ -29,8 +29,8 @@ interface ServerExtra { name: string, error?: string, busy?: Promise<string> }
 let httpSrv: undefined | http.Server & ServerExtra
 let httpsSrv: undefined | http.Server & ServerExtra
 
-// update relaunch can keep a bridge process alive, so we proactively close listeners here to release ports before the next binary binds
-onProcessExit(() => Promise.all([stopServer(httpSrv), stopServer(httpsSrv)]))
+// the update relaunch can keep a bridge process alive, so we proactively close listeners here to release ports before the next binary binds; do it before (5) the storage file is closed, because sockets write there
+onProcessExit(() => Promise.all([stopServer(httpSrv), stopServer(httpsSrv)]), 5)
 
 const openBrowserAtStart = defineConfig('open_browser_at_start', true)
 

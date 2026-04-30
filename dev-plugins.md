@@ -884,6 +884,7 @@ If so, please report, and we'll do our best to update it asap.
 Where there is too little information, you'll have to consult the source code. Apologies.
 
     originalPath: string // before roots is applied
+    root?: string // root path applied to this request
     browsing?: string // for admin/monitoring
     dontLog?: boolean // don't log this request
     logExtra?: object
@@ -891,17 +892,24 @@ Where there is too little information, you'll have to consult the source code. A
     spam?: boolean // this request was marked as spam
     params: Record<string, any>
     account?: Account // user logged in
+    usernames?: Set<string> // cached expanded usernames for permission checks
     revProxyPath: string
     connection: Connection
+    whenProxyDetected?: Date
     skipFilters?: boolean
     vfsNode?: VfsNode
     includesLastByte?: boolean
+    considerAsGui?: boolean // treat this request as part of the gui
     serveApp?: boolean // please, serve the frontend app
     uploadPath?: string // current one
     uploads?: string[] // in case of request with potentially multiple uploads (POST), we register all filenames (no full path)
     length?: number
+    opProgress?: number // current transfer progress, from 0 to 1
+    opTotal?: number // total bytes for the current operation
+    opOffset?: number // initial completed fraction for resumed operations
     originalStream?: typeof ctx.body
     uploadDestinationPath?: string // this value is the temporary file in uploadStart and the final one in uploadFinished
+    uploadSize?: number // final upload size
     archive?: string
     fileSource?: string // set when serving a file
     fileStats?: Stat // file attributes

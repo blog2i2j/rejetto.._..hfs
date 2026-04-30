@@ -103,9 +103,12 @@ export const webdav: Koa.Middleware = async (ctx, next) => {
     const ua = ctx.get('user-agent')
     if (path.includes('/._') && ua?.startsWith('WebDAVFS')) {// too much spam from Finder for these files that can contain metas
         ctx.state.dontLog = true
+        ctx.state.webdavDetected = true
         return ctx.status = HTTP_FORBIDDEN
     }
     const isWebdavAuthRequest = WEBDAV_METHODS.has(ctx.method) || WEBDAV_HINT_HEADERS.some(h => ctx.get(h))
+    if (isWebdavAuthRequest)
+        ctx.state.webdavDetected = true
     if (isWebdavAuthRequest && ua && getCurrentUsername(ctx))
         webdavDetectedAgents.try(webdavAgentKey(ctx, ua), () => true)
 
@@ -394,4 +397,10 @@ function dotClean(path: string) {
             delete cleaners[path]
         }
     }, 10_000))
+}
+
+declare module "koa" {
+    interface DefaultState {
+        webdavDetected?: boolean
+    }
 }

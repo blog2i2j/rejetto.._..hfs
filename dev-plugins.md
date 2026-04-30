@@ -905,6 +905,7 @@ Where there is too little information, you'll have to consult the source code. A
     archive?: string
     fileSource?: string // set when serving a file
     fileStats?: Stat // file attributes
+    webdavDetected?: boolean // there's no clear way to detect a webdav client, but this is the result of the heuristic in HFS
 
 ## Other files
 

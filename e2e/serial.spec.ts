@@ -34,7 +34,7 @@ test('upload1', async ({ page, context, browserName }) => {
     await page.getByRole('button', { name: 'Pick files' }).click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(fileToUpload);
-    // can't do without. I tried using route.continue, but i can't send half-body keeping the full content-length, and i also cannot pass a stream (to throttle)
+    // can't do without cdp to slow down the upload. I tried using route.continue, but i can't send half-body keeping the full content-length, and i also cannot pass a stream (to throttle)
     const cdpSession = await context.newCDPSession(page)
     await cdpSession.send('Network.emulateNetworkConditions', NETWORK_PRESETS.Regular2G)
     await page.getByRole('button', { name: 'Edit' }).click();
@@ -44,6 +44,7 @@ test('upload1', async ({ page, context, browserName }) => {
     await renameInput.fill(uploadName);
     await renameDialog.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByText(uploadName)).toBeVisible() // rename was effective
+    // we send the upload, slowly, so that we can interrupt it in the admin-panel to test the upload resume
     await page.getByRole('button', { name: 'Send 1 file' }).click();
     const uploadCells = pageAdmin.getByRole('cell', { name: `${uploadName} /for-admins/upload` })
     await expect(uploadCells.first()).toBeVisible()

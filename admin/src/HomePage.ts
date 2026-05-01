@@ -55,7 +55,7 @@ export default function HomePage() {
         async onContextMenu(ev: any) {
             ev.preventDefault()
             if (!status.updatePossible)
-                return alertDialog("Automatic update is not support for your installation", 'warning')
+                return alertDialog("Automatic update is not supported for your installation", 'warning')
             const res = await promptDialog("Enter a link to the zip to install")
             if (res)
                 await update(res)
@@ -236,6 +236,6 @@ function cfgLink(text=`Options page`) {
 
 export function proxyWarning(cfg: any, status: any) {
     return status && cfg && !cfg.ignore_proxies && (!cfg.proxies && status.proxyDetected ? "A proxy was detected but none is configured"
-        : cfg.proxies && !status.proxyDetected && (Date.now() - +new Date(status.started) > DAY) ? `Proxies is set to ${cfg.proxies} but none was detected recently. Consider setting it zero`
+        : cfg.proxies && !status.proxyDetected && (Date.now() - +new Date(status.started) > DAY) ? `Proxy count is set to ${cfg.proxies} but none was detected recently. Consider setting it to zero`
         : '')
 }

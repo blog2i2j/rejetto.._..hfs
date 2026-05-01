@@ -74,7 +74,7 @@ export default function InternetPage({ setTitleSide }: PageProps) {
                 formatTimestamp(data.ts), ' – ',
                 prefix("Error: ", stripTags(data.error)).slice(0, 500) || "Updated successfully",
             ),
-            "This tool can keep your domain updated with your latest IP address. Not every service is compatible, and most of them have their own software for the job, which is superior, but we offer this lightweight solution in case you are more keen to it.",
+            "This tool can keep your domain updated with your latest IP address. Not every service is compatible, and most of them have their own software for the job, which is superior, but we offer this lightweight solution if you prefer it.",
             h(ConfigForm<{
                 [CFG.dynamic_dns_url]: string,
             }>, {
@@ -97,7 +97,7 @@ export default function InternetPage({ setTitleSide }: PageProps) {
                                         title: label + " wizard",
                                         form: {
                                             maxWidth: '20em',
-                                            before: h(Box, { mb: 1 }, "Following information is stored non-encrypted"),
+                                            before: h(Box, { mb: 1 }, "The following information is stored unencrypted"),
                                             fields: fields.map(k => _.isString(k) ? { k } : k)
                                         }
                                     }).then(symbols => symbols && setValues({ [CFG.dynamic_dns_url]: replace(url, symbols as any, '$') }))
@@ -212,7 +212,7 @@ export default function InternetPage({ setTitleSide }: PageProps) {
                         multiline: true,
                         fromField: x => x.replaceAll('\n', ','),
                         toField: x => x.replaceAll(',', '\n'),
-                        helperText: md("Example: your.domain.com\nMultiple domains on separated lines")
+                        helperText: md("Example: your.domain.com\nMultiple domains on separate lines")
                     },
                     {
                         k: 'acme_renew',

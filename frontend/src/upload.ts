@@ -79,7 +79,7 @@ export function showUpload() {
                                 ])
                             }),
                         ),
-                        !isMobile && h(Flex, { gap: 4 }, hIcon('info'), t('upload_dd_hint', "You can upload files doing drag&drop on the files list")),
+                        !isMobile && h(Flex, { gap: 4 }, hIcon('info'), t('upload_dd_hint', "You can upload files by dragging and dropping them onto the file list")),
                         h(UploadStatus, { margin: '.5em 0' }),
                         adding.length > 0 && h(Flex, { center: true, flexWrap: 'wrap' },
                             h('button', {

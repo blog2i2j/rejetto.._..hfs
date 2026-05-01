@@ -29,7 +29,7 @@ const logLabels = {
     error_log: "Not served",
     console: "Console",
     disconnections: "Disconnections",
-    ips: "IP's",
+    ips: "IPs",
 }
 
 let reloadIps: any

@@ -181,7 +181,7 @@ export default function AccountsPage() {
                 errors.push(username)
         reload()
         if (errors.length)
-            return alertDialog("Following elements couldn't be deleted: " + errors.join(', '), 'error')
+            return alertDialog("The following items couldn't be deleted: " + errors.join(', '), 'error')
     }
 
 }

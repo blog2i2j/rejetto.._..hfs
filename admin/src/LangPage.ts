@@ -16,7 +16,7 @@ export default function LangPage({ setTitleSide }: PageProps) {
     const { list, error, connecting, reload } = useApiList('get_langs')
     const langs = useMemo(() => ['en', ..._.uniq(list.map(x => x.code))], [list])
     setTitleSide(useMemo(() =>
-        h(Alert, { severity: 'info', sx: { display: { xs: 'none', sm: 'inherit' }  } }, "Translation is limited to Front-end, it doesn't apply to Admin-panel"),
+        h(Alert, { severity: 'info', sx: { display: { xs: 'none', sm: 'inherit' }  } }, "Translation is limited to the Front-end and doesn't apply to the Admin-panel"),
         []))
     return h(Fragment, {},
         h(Box, { mt: 1, maxWidth: '50em', flex: 1, ...fillFlexParentSx },

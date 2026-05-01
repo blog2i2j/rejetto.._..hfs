@@ -222,7 +222,7 @@ function FilesList() {
         : !snap.loading && (snap.searchManuallyInterrupted ? t('stopped_before', "Stopped before finding anything")
         : t('empty_list', "Nothing here"))
 
-    const focusHint = `${t('focus_hint', "By typing on your keyboard, you search and focus elements of the list.")}\n\nESC: ${t`Cancel`}`
+    const focusHint = `${t('focus_hint', "By typing on your keyboard, you search and focus the items in the list.")}\n\nESC: ${t`Cancel`}`
     return h(Fragment, {},
         focus && h('div', { id: focusTypingId, className: focusIndex < 0 ? 'focus-typing-mismatch' : '' }, focus,
             hIcon('info', { style: { cursor: 'default', marginLeft: '.3em' }, title: focusHint, onClick: () => alertDialog(focusHint) }) ),

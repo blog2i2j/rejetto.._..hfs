@@ -53,6 +53,16 @@ const WEBDAV_SHARED_LOCK_BODY = `<?xml version="1.0" encoding="utf-8"?>
   <lockscope><shared/></lockscope>
   <locktype><write/></locktype>
 </lockinfo>`
+const WEBDAV_PROPPATCH_BODY = `<?xml version="1.0" encoding="utf-8"?>
+<D:propertyupdate xmlns:D="DAV:" xmlns:Z="urn:schemas-microsoft-com:">
+  <D:set>
+    <D:prop>
+      <Z:Win32LastModifiedTime>Mon, 04 May 2026 10:00:00 GMT</Z:Win32LastModifiedTime>
+      <Z:Win32FileAttributes>00000020</Z:Win32FileAttributes>
+      <D:getlastmodified>Mon, 04 May 2026 10:00:00 GMT</D:getlastmodified>
+    </D:prop>
+  </D:set>
+</D:propertyupdate>`
 let defaultBaseUrl = BASE_URL
 
 const execP = (cmd: string) => promisify(exec)(cmd).then(x => x.stdout)
@@ -516,6 +526,96 @@ describe('webdav', () => {
                 await rmAny(uploadUriToPath(renamed))
                 await rmAny(destPath)
             }
+        }
+    })
+    test('webdav.proppatch accepts dead properties as no-op', async () => {
+        const name = `wd-proppatch-${randomId(6)}.txt`
+        const uri = `${UPLOAD_ROOT}${UPLOAD_DIR}/${name}`
+        let destPath = ''
+        try {
+            destPath = await webdavUpload(uri, x => x?.uri === uri, 'test')()
+            await req(uri, data => data.includes(`<href>${uri}</href>`) && !data.includes(`<href>${uri}/</href>`), {
+                method: 'PROPFIND',
+                auth,
+                jar,
+                headers: { depth: '0', 'user-agent': WEBDAV_UA },
+            })()
+            await req(uri, (data, res) => {
+                if (res.statusCode !== 207)
+                    throw `expected 207, got ${res.statusCode}`
+                if (XMLValidator.validate(data) !== true)
+                    throw "invalid XML"
+                if (!/<Win32LastModifiedTime\/>[\s\S]*HTTP\/1\.1 200 OK/.test(data))
+                    throw "missing no-op success for Windows property"
+                if (!/<getlastmodified\/>[\s\S]*HTTP\/1\.1 403 Forbidden/.test(data))
+                    throw "missing forbidden status for protected live property"
+            }, {
+                method: 'PROPPATCH',
+                auth,
+                jar,
+                headers: {
+                    'content-type': 'text/xml',
+                    'content-length': Buffer.byteLength(WEBDAV_PROPPATCH_BODY),
+                    'user-agent': WEBDAV_UA,
+                },
+                body: WEBDAV_PROPPATCH_BODY,
+            })()
+            if (Math.abs(statSync(destPath).mtimeMs - Date.parse('Mon, 04 May 2026 10:00:00 GMT')) > 1000)
+                throw "mtime was not updated"
+        }
+        finally {
+            await rmAny(destPath)
+        }
+    })
+    test('webdav.proppatch requires upload permission for timestamp changes', req('/f1/f2/alfa.txt', data =>
+        /<Win32LastModifiedTime\/>[\s\S]*HTTP\/1\.1 403 Forbidden/.test(data), {
+        method: 'PROPPATCH',
+        auth,
+        jar,
+        headers: {
+            'content-type': 'text/xml',
+            'content-length': Buffer.byteLength(WEBDAV_PROPPATCH_BODY),
+            'user-agent': WEBDAV_UA,
+        },
+        body: WEBDAV_PROPPATCH_BODY,
+    }))
+    test('webdav.proppatch metadata grace is bound to recent upload', async () => {
+        const staleName = `wd-proppatch-stale-${randomId(6)}.txt`
+        const freshName = `wd-proppatch-fresh-${randomId(6)}.txt`
+        const staleUri = `${CANT_OVERWRITE_URI}${staleName}`
+        const freshUri = `${CANT_OVERWRITE_URI}${freshName}`
+        const dir = await ensureCantOverwriteDir()
+        const stalePath = resolve(dir, staleName)
+        let freshPath = ''
+        try {
+            await writeFile(stalePath, 'stale')
+            await req(staleUri, data => /<Win32LastModifiedTime\/>[\s\S]*HTTP\/1\.1 403 Forbidden/.test(data), {
+                method: 'PROPPATCH',
+                auth,
+                jar,
+                headers: {
+                    'content-type': 'text/xml',
+                    'content-length': Buffer.byteLength(WEBDAV_PROPPATCH_BODY),
+                    'user-agent': WEBDAV_UA,
+                },
+                body: WEBDAV_PROPPATCH_BODY,
+            })()
+            freshPath = await webdavUpload(freshUri, x => x?.uri === freshUri, 'fresh')()
+            await req(freshUri, data => /<Win32LastModifiedTime\/>[\s\S]*HTTP\/1\.1 200 OK/.test(data), {
+                method: 'PROPPATCH',
+                auth,
+                jar,
+                headers: {
+                    'content-type': 'text/xml',
+                    'content-length': Buffer.byteLength(WEBDAV_PROPPATCH_BODY),
+                    'user-agent': WEBDAV_UA,
+                },
+                body: WEBDAV_PROPPATCH_BODY,
+            })()
+        }
+        finally {
+            await rmAny(stalePath)
+            await rmAny(freshPath)
         }
     })
     test('webdav.escaping', req('/f1/hidden', data => XMLValidator.validate(data) === true, { method: 'PROPFIND', auth, jar: {}, headers: { depth: '1' } }))

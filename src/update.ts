@@ -11,7 +11,7 @@ import { chmod, rename, writeFile, rm } from 'fs/promises'
 import open from 'open'
 import { configReady, currentVersion, defineConfig, versionToScalar } from './config'
 import { cmdEscape, runningAsWindowsService } from './util-os'
-import { onProcessExit } from './first'
+import { onProcessExit, quit } from './first'
 import { storedMap } from './persistence'
 import _ from 'lodash'
 import { argv } from './argv'
@@ -64,7 +64,7 @@ const ReleaseAssetKeys = ['name', 'browser_download_url'] satisfies (keyof Relea
 const curV = currentVersion.scalar
 function prepareRelease(r: Release) {
     const v = versionToScalar(r.name)
-    return Object.assign(_.pick(r, ReleaseKeys), { // prune a bit, as it will be serialized and it has a lot of unused data
+    return Object.assign(_.pick(r, ReleaseKeys), { // prune a bit, as it will be serialized, and it has a lot of unused data
         versionScalar: v,
         isNewer: v > curV, // make easy to know what's newer
         assets: r.assets.map((a: any) => _.pick(a, ReleaseAssetKeys))
@@ -197,7 +197,8 @@ export async function update(tagOrUrl: string='') {
             spawnSync(cmdEscape(newBin), ['--updating', binFile, '--cwd .'], { shell: true, stdio: [0,1,2] }) // sync necessary to work on Mac by double-click
         })
         console.log("Quitting")
-        setTimeout(() => process.exit(100)) // non-zero, otherwise some service managers (like Shawl) won't restart the process
+        setTimeout(() => quit(100), // non-zero, otherwise some service managers (like Shawl) won't restart the process.
+            200) // give time to return (and caller to complete, eg: rest api to reply)
     }
     catch (e: any) {
         pluginsWatcher.unpause()

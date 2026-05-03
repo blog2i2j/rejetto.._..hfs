@@ -13,13 +13,14 @@ export function onProcessExit(cb: ProcessExitHandler, order=10) {
 }
 
 export let quitting = false
+export let exitCode = 0
 // 'exit' event is handled as the last resort, but it's not compatible with async callbacks
-onFirstEvent(process, ['exit', 'SIGQUIT', 'SIGTERM', 'SIGINT', 'SIGHUP'], async signal => {
+onFirstEvent(process, ['exit', 'SIGQUIT', 'SIGTERM', 'SIGINT', 'SIGHUP', 'beforeExit'], async signal => {
     console.log('Quitting with signal:', signal || 'unknown')
     quitting = true
     const byOrder = _.groupBy(Array.from(cbsOnExit), 'order') // this will be inherently ordered because keys are positive integers
-    for (const recs of Object.values(byOrder))
-        await Promise.allSettled(recs.map(({ cb }) => {
+    for (const recs of Object.values(byOrder)) {
+        const ret = Promise.allSettled(recs.map(({ cb }) => {
             try { return cb(signal) }
             // keep exit moving even when a synchronous cleanup fails after partially shutting down
             catch (e) {
@@ -27,9 +28,18 @@ onFirstEvent(process, ['exit', 'SIGQUIT', 'SIGTERM', 'SIGINT', 'SIGHUP'], async 
                 return Promise.reject(e)
             }
         }))
+        if (signal !== 'exit') // exit is sync
+            await ret
+    }
+    cbsOnExit.clear()
     console.debug('Process exit')
-    process.exit(0)
+    process.exit(exitCode)
 })
+
+export function quit(code=0) {
+    exitCode = code
+    process.emit('SIGINT')
+}
 
 // keep calling cb in a sync fashion – returning a promise instead would break the code for argv.updating (update.ts)
 export function onFirstEvent(emitter:EventEmitter, events: string[], cb: (...args:any[]) => void) {
